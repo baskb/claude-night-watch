@@ -32,24 +32,38 @@ run more than the single agreed resume - it is a one-shot safety net, not a loop
 
 1. **Watch** the active session's transcript (`~/.claude/projects/<encoded-path>/*.jsonl`).
    While it is being written to (fresh within `-StaleMinutes`), do nothing.
-2. **Probe** when the transcript goes stale: run a cheap `claude -p` on Haiku and
-   check the reply for a usage-limit message. Parse the reset time from it
-   ("resets 3:45pm" style - an unofficial format, so there is a 30-minute
-   fallback when it cannot be parsed).
-3. **Wait** until the reset time plus a small buffer, then probe again to confirm.
-4. **Resume** the newest session of the project once, headless:
-   `claude -p "<prompt>" --resume <id>` from the project directory. Then stop
-   (`-MaxResumes 1` by default - no loop that drains fresh windows).
+2. **Probe + pin** when the transcript goes stale: run a cheap `claude -p` on
+   Haiku and check the reply for a usage-limit message. If limited, **pin that
+   session** as the one to resume, and parse the reset time ("resets 3:45pm" or
+   "in 3 hours"; an unofficial format, so there is a 30-minute fallback when it
+   cannot be parsed).
+3. **Wait** until the reset, then probe again. Only a **clean, successful,
+   non-limited reply** (the CLI exits 0 with an `OK` body) counts as
+   "window open" - a CLI/auth/network error is *not* mistaken for a reset.
+4. **Resume** the **pinned** session once, headless, after a final freshness
+   re-check: `claude -p "<prompt>" --resume <id>` from the project directory.
+   Then clear the observed-limit flag - with `-MaxResumes > 1`, a further resume
+   requires observing a **new** limit first, so finished work is never re-run.
 
 **Safety model (do not weaken):**
-- Resumes **only** after a usage limit was actually observed. A session that
-  simply finished, or is waiting on the owner, is never woken unprompted.
-- `stop.flag` file beside the script stops it immediately.
-- Hard `-Deadline` (default next 09:30) ends the watch no matter what.
+- Resumes **only** after a usage limit was actually observed, and only the
+  **session that hit it** (pinned) - a session that simply finished, is waiting
+  on the owner, or came back to life during the wait is never woken.
+- "Window open" requires a **positive** clean reply, not merely the absence of a
+  limit - so a transient CLI/auth/network error cannot trigger a resume.
+- After each resume the observed-limit flag is reset: no loop, and no re-run of
+  completed work even with `-MaxResumes > 1`.
+- `stop.flag` file beside the script stops it immediately (also honoured during
+  waits). Hard `-Deadline` (default next 09:30) ends the watch no matter what.
 - Everything is logged to `night-watch.log`.
 - The resumed run's **permission mode is an explicit owner choice per run**
   (`-SkipPermissions`). Unattended runs usually need it (otherwise they hang on
-  the first prompt), but the owner must opt in - it is off by default.
+  the first prompt), but the owner must opt in - it is off by default. **With it
+  on, the resumed run can write files, commit and push with no human in the
+  loop, and its full output is appended to `night-watch.log` (which may capture
+  secrets).** Your `-ResumePrompt` is the only guardrail - be explicit about
+  what the run must NOT do, and do not point it at a repo you would not want
+  touched unattended.
 
 The script is deliberately **pure ASCII**: PowerShell 5.1 reads UTF-8-without-BOM
 as ANSI and turns em-dashes into smart quotes it then mis-parses.

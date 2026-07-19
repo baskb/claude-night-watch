@@ -9,8 +9,11 @@ watcher that fills the gap — plus a packaged [Agent Skill](https://docs.claude
 so Claude itself knows when and how to set it up.
 
 > **One-shot safety net, not a loop.** It resumes **only** after it has actually
-> observed a usage limit, exactly once, and never wakes a session that simply
-> finished. It cannot silently drain fresh windows.
+> observed a usage limit, only the **session that hit it**, and only on a clean
+> successful probe (a CLI/auth/network error is never mistaken for a reset).
+> After a resume it needs a fresh observed limit before running again, so it does
+> not re-run finished work or drain windows. A session that simply finished is
+> never woken.
 
 ---
 
@@ -27,29 +30,44 @@ wrote — so the work continues while you sleep.
 1. **Watch** the active session's transcript
    (`~/.claude/projects/<encoded-path>/*.jsonl`). While it is being written to
    (fresh within `-StaleMinutes`), do nothing.
-2. **Probe** when the transcript goes stale: run a cheap `claude -p` on Haiku and
-   check the reply for a usage-limit message. Parse the reset time
-   (`resets 3:45pm` style — an unofficial format, so there is a 30-minute
-   fallback when it cannot be parsed).
-3. **Wait** until the reset time plus a small buffer, then probe again to confirm.
-4. **Resume** the newest session of the project once, headless:
-   `claude -p "<your prompt>" --resume <id>` from the project directory. Then
-   stop (`-MaxResumes 1` by default).
+2. **Probe + pin** when the transcript goes stale: run a cheap `claude -p` on
+   Haiku and check the reply for a usage-limit message. If limited, **pin that
+   session** and parse the reset time (`resets 3:45pm` or `in 3 hours` — an
+   unofficial format, so there is a 30-minute fallback when it cannot be parsed).
+3. **Wait** until the reset, then probe again. Only a **clean, successful,
+   non-limited reply** (exit 0 with an `OK` body) counts as "window open"; a
+   transient CLI/auth/network error does not.
+4. **Resume** the **pinned** session once, headless, after a final freshness
+   re-check: `claude -p "<your prompt>" --resume <id>` from the project
+   directory. Then clear the observed-limit flag — a further resume
+   (`-MaxResumes > 1`) requires observing a **new** limit first.
 
 ## Safety model (the important part)
 
-- **Only resumes after a limit was actually observed.** A session that simply
-  finished, or is waiting on you, is never woken unprompted.
+- **Only resumes after a limit was actually observed** — and only the **session
+  that hit it** (pinned when the limit is seen). A session that simply finished,
+  is waiting on you, or came back to life during the wait is never woken.
+- **"Window open" needs a positive signal**, not merely the absence of a limit:
+  the confirm-probe must exit 0 with an `OK` reply. A transient CLI/auth/network
+  error is neither "limited" nor "open", so it cannot trigger a resume — it just
+  retries.
+- **No re-running finished work.** After each resume the observed-limit flag is
+  reset, so even with `-MaxResumes > 1` a further resume requires a **new**
+  observed limit.
 - **`stop.flag`** — drop an empty file of that name next to the script to stop it
-  immediately.
-- **Hard `-Deadline`** (default next 09:30) ends the watch no matter what.
+  immediately (honoured during waits too).
+- **Hard `-Deadline`** (default next 09:30) ends the watch no matter what,
+  including mid-sleep.
 - **`-MaxResumes 1`** by default — no loop.
 - **Everything is logged** to `night-watch.log` next to the script.
 - **The resumed run's permission mode is an explicit opt-in per run**
   (`-SkipPermissions`). Unattended runs usually need it (otherwise they hang on
-  the first permission prompt), but it is **off by default** — so the choice,
-  and the risk, is always yours. When you do use it, your `-ResumePrompt` is the
-  only guardrail; say plainly what the run must **not** do.
+  the first permission prompt), but it is **off by default**. **With it on, the
+  resumed run can write files, commit and push with no human in the loop, and
+  its full output is appended to `night-watch.log` — which may capture secrets.**
+  Your `-ResumePrompt` is the only guardrail: say plainly what the run must
+  **not** do, and do not point it at a repo you would not want touched
+  unattended.
 
 ## Requirements
 
@@ -155,12 +173,18 @@ A bash port (`scripts/night-watch.sh`) is a welcome contribution.
 
 ## How it was tested
 
-- Reset-time parser: 10 cases incl. edge cases (`12am`, `12pm`, `11:59pm`,
-  `at 9am`, day-of-week, and non-matching text) via the built-in `-SelfTest`.
+- Reset-time parser: 12 cases via the built-in `-SelfTest`, incl. edge cases
+  (`12am`, `12pm`, `11:59pm`, `at 9am`), weekday scheduling (`Sun 6pm`,
+  `Fri 8am` -> the next occurrence of that day), a relative duration
+  (`try again in 3 hours`), and non-matching text.
 - Control-flow guards proven to exit fast and safely: `stop.flag`, past
   `-Deadline`, and `-MaxResumes 0` — each without calling `claude` or hanging.
 - Pure ASCII (PowerShell 5.1 reads UTF-8-without-BOM as ANSI and mis-parses
   smart quotes) and zero parse errors.
+
+The `evals/` folder holds **manual** trigger/behaviour prompts (skill-creator
+format) for reviewing how the skill responds — they are expectations, not
+automated assertions. The parser and guard checks above are the automated part.
 
 ## Credit
 
