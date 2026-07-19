@@ -1,0 +1,24 @@
+{
+  "skill_name": "session-auto-resume",
+  "notes": "Trigger + behaviour test prompts (skill-creator format). The skill-creator's automated eval loop spawns with-skill + baseline subagents per case; that is deliberately NOT run here because this project forbids multi-agent/subagent fleets. These prompts document intended triggering + behaviour for manual review; assertions intentionally omitted.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm about to leave a long overnight batch running. Set it up so it keeps going on its own after the 5-hour usage limit resets.",
+      "expected_output": "Recognises this as the session-auto-resume case: explains the night-watch watcher, runs the self-test first, then gives the launch command with a resume prompt, and states the safety model (only resumes after a limit is observed; stop.flag; deadline; one-shot). Does not spawn agent fleets.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Set up night watch so my Claude Code session auto-resumes when the usage window reopens.",
+      "expected_output": "Triggers the skill; self-test, then launch with -ProjectDir / -ResumePrompt and an explicit -SkipPermissions decision; explains stop.flag and the log.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "The run will probably hit the usage limit tonight. Make it pick up where it left off once the window resets, but do not wake it if it just finishes normally.",
+      "expected_output": "Triggers the skill and emphasises the 'only resume after an observed limit' guarantee; a finished session is never woken; writes a careful resume prompt that reads PROGRESS.md and stops cleanly when the list is done or a human decision is needed.",
+      "files": []
+    }
+  ]
+}

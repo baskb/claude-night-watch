@@ -1,0 +1,13 @@
+# runtime artifacts of the watcher
+night-watch.log
+stop.flag
+
+# Claude Code impeccable design-hook cache (never ship)
+.impeccable/
+
+# packaged skill (build artifact; attach to a release instead of committing)
+*.skill
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
