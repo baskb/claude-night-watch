@@ -1,4 +1,4 @@
-# Session Auto-Resume for Claude Code (night-watch)
+# night-watch - Claude Code session auto-resume
 
 Automatically resume a headless **Claude Code** session **once** after the
 5-hour usage window resets, so a long unattended run finishes on its own.
@@ -69,10 +69,10 @@ Copy the skill folder so Claude discovers it:
 
 ```bash
 # project-scoped (this repo -> a project's .claude/skills/)
-cp -r . <your-project>/.claude/skills/session-auto-resume
+cp -r . <your-project>/.claude/skills/night-watch
 
 # or user-scoped, available in every project
-cp -r . ~/.claude/skills/session-auto-resume
+cp -r . ~/.claude/skills/night-watch
 ```
 
 Then just ask Claude something like *"set up night watch so my session

@@ -1,5 +1,5 @@
 ---
-name: session-auto-resume
+name: night-watch
 description: >-
   Automatically resume a headless Claude Code session after the 5-hour usage
   window resets, so a long unattended run continues on its own. Use when the
@@ -11,7 +11,7 @@ description: >-
   actually observed a usage limit.
 ---
 
-# Session Auto-Resume (night-watch)
+# night-watch - Claude Code session auto-resume
 
 Claude Code has no native auto-resume across the 5-hour usage window (Anthropic
 closed that feature request as "not planned"). This skill packages a small,
