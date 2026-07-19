@@ -1,7 +1,7 @@
 ---
 name: night-watch
 description: >-
-  Automatically resume a headless Claude Code session after the 5-hour usage
+  Automatically resume an unattended Claude Code session after the 5-hour usage
   window resets, so a long unattended run continues on its own. Use when the
   user wants work to keep going across a usage-limit reset without a manual
   restart - overnight batches, long autonomous task lists, "auto-resume",
@@ -15,7 +15,7 @@ description: >-
 
 Claude Code has no native auto-resume across the 5-hour usage window (Anthropic
 closed that feature request as "not planned"). This skill packages a small,
-safe PowerShell watcher that resumes a headless session **once** after the
+safe PowerShell watcher that resumes an unattended session **once** after the
 window reopens, so a long unattended task list finishes on its own.
 
 ## When to use this
@@ -40,7 +40,7 @@ run more than the single agreed resume - it is a one-shot safety net, not a loop
 3. **Wait** until the reset, then probe again. Only a **clean, successful,
    non-limited reply** (the CLI exits 0 with an `OK` body) counts as
    "window open" - a CLI/auth/network error is *not* mistaken for a reset.
-4. **Resume** the **pinned** session once, headless, after a final freshness
+4. **Resume** the **pinned** session once, unattended, after a final freshness
    re-check: `claude -p "<prompt>" --resume <id>` from the project directory.
    Then clear the observed-limit flag - with `-MaxResumes > 1`, a further resume
    requires observing a **new** limit first, so finished work is never re-run.
@@ -94,7 +94,7 @@ Leave `-ProjectDir` off to use the current directory. Tune with `-PollMinutes`,
 
 ## Writing the resume prompt (this matters most)
 
-The resume prompt is the whole instruction the fresh headless run gets - write it
+The resume prompt is the whole instruction the fresh unattended run gets - write it
 like a careful handoff:
 - Point it at durable state: "Read PROGRESS.md and continue the agreed list."
 - Name the exact scope and the branch; forbid destructive actions explicitly

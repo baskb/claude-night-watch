@@ -14,7 +14,7 @@
     3. WAIT until the reset, then probe again. Only a CLEAN, successful,
        non-limited reply (exit 0 + an "OK" body) counts as "window open" - a
        CLI/auth/network error is NOT mistaken for an open window.
-    4. RESUME the PINNED session once, headless, after a final freshness
+    4. RESUME the PINNED session once, unattended, after a final freshness
        re-check: `claude -p "<prompt>" --resume <id>` from the project dir.
        Then clear the observed-limit flag: a further resume (MaxResumes > 1)
        requires observing a NEW limit first - it never re-runs finished work.

@@ -1,6 +1,6 @@
 # night-watch - Claude Code session auto-resume
 
-Automatically resume a headless **Claude Code** session **once** after the
+Automatically resume an unattended **Claude Code** session **once** after the
 5-hour usage window resets, so a long unattended run finishes on its own.
 
 Claude Code has no native auto-resume across the usage limit (Anthropic closed
@@ -37,7 +37,7 @@ wrote — so the work continues while you sleep.
 3. **Wait** until the reset, then probe again. Only a **clean, successful,
    non-limited reply** (exit 0 with an `OK` body) counts as "window open"; a
    transient CLI/auth/network error does not.
-4. **Resume** the **pinned** session once, headless, after a final freshness
+4. **Resume** the **pinned** session once, unattended, after a final freshness
    re-check: `claude -p "<your prompt>" --resume <id>` from the project
    directory. Then clear the observed-limit flag — a further resume
    (`-MaxResumes > 1`) requires observing a **new** limit first.
@@ -126,7 +126,7 @@ Leave `-ProjectDir` off to use the current directory.
 
 ### Writing the resume prompt (this matters most)
 
-The resume prompt is the entire instruction the fresh headless run receives — it
+The resume prompt is the entire instruction the fresh unattended run receives — it
 has **no memory of the earlier conversation**. Write it like a careful handoff:
 
 - Point it at durable state: *"Read PROGRESS.md and continue the agreed list."*
